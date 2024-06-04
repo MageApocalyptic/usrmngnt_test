@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Management</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="user_functions.js"></script>  </head>
+<body>
+    <h1>User Management</h1>
+    <form id="userForm">
+        <input type="text" id="userId" style="display: none">
+        <label>Name:</label>
+        <input type="text" id="name"><br>
+        <label>Email:</label>
+        <input type="email" id="email"><br>
+        <button type="submit" id="saveBtn">Create</button>
+    </form>
+    <div id="user-list"></div> <br>
+    <table id="tableUser" border="1">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Edit</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <script>
+        $(document).ready(function() {
+            // Load users on page load
+            loadUsers();
+
+            // Function to load users
+            function loadUsers() {
+                $.ajax({
+                    url: 'getUser.php',
+                    type: 'GET',
+                    success: function(response) {
+                        console.log(response);
+                        var users = JSON.parse(response);                        
+                        var html = '';
+                        for (var i = 0; i < users.length; i++) {
+                            html += '<tr>';
+                            html += '<td>' + users[i].name + '</td>';
+                            html += '<td>' + users[i].email + '</td>';
+                            html += '<td><button onclick="updateBtn(' + users[i].id + ')">Edit</button></td>';
+                            html += '<td><button onclick="deleteBtn(' + users[i].id + ')">Delete</button></td>';
+                            html += '</tr>';
+                        }
+                        $('#tableUser tbody').html(html);
+                    }
+                });
+            }
+
+            // Save or update user
+            $('#userForm').submit(function(event) {
+                event.preventDefault();               
+                var button = document.getElementById('saveBtn'); 
+                var id = $('#userId').val();                
+                var name = $('#name').val();
+                var email = $('#email').val();
+                var params = {};
+                if(id == ''){
+                    params= {               
+                        name: name,
+                        email: email
+                    };
+                }else{
+                    params= {               
+                        id: id,
+                        name: name,
+                        email: email
+                    };
+
+                }
+                 $.ajax({
+                    url: 'createUser.php',
+                    type: 'POST',
+                    data: params,
+                    success: function(response) {
+                        loadUsers();
+                        document.getElementById('userForm').reset();
+                        button.innerText = 'Create';
+                    }
+                });     
+               
+            });
+
+            // Delete user
+           window.deleteBtn = function(id) {
+                if (confirm("Are you sure you want to delete this user?")) {
+                    $.ajax({
+                        url: 'deleteUser.php',
+                        type: 'POST',
+                        data: { id: id },
+                        success: function(response) {
+                            loadUsers();
+                        }
+                    });
+                }
+            };
+
+            //Edit user
+            window.updateBtn = function(id){                      
+                $.ajax({
+                    url: 'getUser.php',
+                    type: 'POST',
+                    data: { userid: id },
+                    success: function(response) {                        
+                        var user = JSON.parse(response);
+                        var button = document.getElementById('saveBtn');
+                        $('#name').val(user.name);
+                        $('#email').val(user.email);
+                        $('#userId').val(user.id);
+                        button.innerText = 'Update';
+                    }
+                });
+            };
+        });
+    </script>
+</body>
+</html>
